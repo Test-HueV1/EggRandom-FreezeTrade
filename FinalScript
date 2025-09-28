@@ -1,0 +1,517 @@
+-- GROW A GARDEN USER @Mayksszz
+-- GROW A GARDEN USER @Mayksszz
+-- GROW A GARDEN USER @Mayksszz
+-- GROW A GARDEN USER @Mayksszz
+-- GROW A GARDEN USER @Mayksszz
+-- GROW A GARDEN USER @Mayksszz
+-- GROW A GARDEN USER @Mayksszz
+-- GROW A GARDEN USER @Mayksszz
+-- GROW A GARDEN USER @Mayksszz
+-- GROW A GARDEN USER @Mayksszz
+
+--// Services
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+local tweenService = game:GetService("TweenService")
+local userInput = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+-- local TeleportService = game:GetService("TeleportService") -- Not necessary if relying on executor re-injection/GUI persistence
+
+-- Configuration
+local LOAD_DELAY_SECONDS = 5 * 60 -- CHANGED TO 5 MINUTES (300 seconds)
+local GENERAL_COOLDOWN_TIME = 60 -- 1 minute (60 seconds) for the new buttons
+
+-- --- START: SCRIPT LOCK/LOADING SCREEN LOGIC ---
+
+--// Loading GUI
+local LoadingGUI = Instance.new("ScreenGui")
+LoadingGUI.Name = "LoadingGUI"
+LoadingGUI.ResetOnSpawn = false
+LoadingGUI.Parent = playerGui
+
+--// Loading Frame (Container) - MODIFIED FOR NEW STYLE
+local LoadingFrame = Instance.new("Frame")
+LoadingFrame.Size = UDim2.new(0.4, 0, 0.25, 0) -- INCREASED SIZE for profile
+LoadingFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+LoadingFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+LoadingFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25) -- Dark Black/Grey
+LoadingFrame.BorderSizePixel = 0
+LoadingFrame.Parent = LoadingGUI
+Instance.new("UICorner", LoadingFrame).CornerRadius = UDim.new(0, 10)
+
+-- ===============================================
+-- // START: PLAYER PROFILE SECTION (NEW)
+-- ===============================================
+
+--// Profile Container Frame
+local ProfileContainer = Instance.new("Frame")
+ProfileContainer.Size = UDim2.new(1, 0, 0.4, 0)
+ProfileContainer.Position = UDim2.new(0, 0, 0, 0)
+ProfileContainer.BackgroundTransparency = 1
+ProfileContainer.Parent = LoadingFrame
+
+--// Player Avatar Icon
+local AvatarFrame = Instance.new("Frame")
+AvatarFrame.Size = UDim2.new(0, 60, 0, 60)
+AvatarFrame.Position = UDim2.new(0.05, 0, 0.5, 0)
+AvatarFrame.AnchorPoint = Vector2.new(0, 0.5)
+AvatarFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+AvatarFrame.ClipsDescendants = true
+AvatarFrame.Parent = ProfileContainer
+Instance.new("UICorner", AvatarFrame).CornerRadius = UDim.new(1, 0)
+
+local AvatarImage = Instance.new("ImageLabel")
+AvatarImage.Size = UDim2.new(1, 0, 1, 0)
+AvatarImage.BackgroundTransparency = 1
+AvatarImage.Image = "rbxassetid://0" -- Default
+AvatarImage.Parent = AvatarFrame
+
+-- Fetch and set the player's avatar
+local success, thumb = pcall(function()
+    return Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
+end)
+if success and thumb then
+    AvatarImage.Image = thumb
+end
+
+--// Player Username Label
+local UsernameLabel = Instance.new("TextLabel")
+UsernameLabel.Size = UDim2.new(0.8, 0, 0.5, 0)
+UsernameLabel.Position = UDim2.new(0.3, 0, 0, 0)
+UsernameLabel.AnchorPoint = Vector2.new(0, 0)
+UsernameLabel.BackgroundTransparency = 1
+UsernameLabel.Text = player.Name -- The player's name
+UsernameLabel.Font = Enum.Font.GothamBold
+UsernameLabel.TextSize = 18
+UsernameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+UsernameLabel.TextXAlignment = Enum.TextXAlignment.Left
+UsernameLabel.TextYAlignment = Enum.TextYAlignment.Center
+UsernameLabel.Parent = ProfileContainer
+
+--// "Loading" Text Label
+local LoadingText = Instance.new("TextLabel")
+LoadingText.Size = UDim2.new(0.8, 0, 0.5, 0)
+LoadingText.Position = UDim2.new(0.3, 0, 0.5, 0)
+LoadingText.AnchorPoint = Vector2.new(0, 0)
+LoadingText.BackgroundTransparency = 1
+LoadingText.Text = "LOADING..." -- A fixed loading message
+LoadingText.Font = Enum.Font.GothamBold
+LoadingText.TextSize = 14
+LoadingText.TextColor3 = Color3.fromRGB(150, 70, 200) -- Purple color
+LoadingText.TextXAlignment = Enum.TextXAlignment.Left
+LoadingText.TextYAlignment = Enum.TextYAlignment.Center
+LoadingText.Parent = ProfileContainer
+
+-- ===============================================
+-- // END: PLAYER PROFILE SECTION
+-- ===============================================
+
+
+--// TOP HEADER FRAME (Original Header, now below profile)
+local HeaderFrame = Instance.new("Frame")
+HeaderFrame.Size = UDim2.new(1, 0, 0.3, 0) -- Adjusted height
+HeaderFrame.Position = UDim2.new(0, 0, 0.4, 0) -- Moved down
+HeaderFrame.BackgroundTransparency = 1
+HeaderFrame.Parent = LoadingFrame
+
+--// Script Icon (Original IconFrame, now smaller)
+local IconFrame = Instance.new("Frame")
+IconFrame.Size = UDim2.new(0, 30, 0, 30) -- Smaller
+IconFrame.Position = UDim2.new(0.05, 0, 0.5, 0)
+IconFrame.AnchorPoint = Vector2.new(0, 0.5)
+IconFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+IconFrame.ClipsDescendants = true
+IconFrame.Parent = HeaderFrame
+Instance.new("UICorner", IconFrame).CornerRadius = UDim.new(1, 0)
+
+local IconImage = Instance.new("ImageLabel")
+IconImage.Size = UDim2.new(1, 0, 1, 0)
+IconImage.BackgroundTransparency = 1
+IconImage.Image = "rbxassetid://1011311053" -- Generic lock icon, symbolizing script authentication
+IconImage.Parent = IconFrame
+
+--// Main Status Text Label (Modified)
+local MainStatusLabel = Instance.new("TextLabel")
+MainStatusLabel.Size = UDim2.new(0.8, 0, 1, 0)
+MainStatusLabel.Position = UDim2.new(0.2, 0, 0, 0) -- Adjusted X-position
+MainStatusLabel.AnchorPoint = Vector2.new(0, 0)
+MainStatusLabel.BackgroundTransparency = 1
+MainStatusLabel.Text = "Authenticating Script..." -- Best Text 1
+MainStatusLabel.Font = Enum.Font.GothamBold
+MainStatusLabel.TextSize = 16
+MainStatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+MainStatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+MainStatusLabel.TextYAlignment = Enum.TextYAlignment.Center
+MainStatusLabel.Parent = HeaderFrame
+
+--// Progress Bar Background (Adjusted position)
+local BarBackground = Instance.new("Frame")
+BarBackground.Size = UDim2.new(0.9, 0, 0, 10)
+BarBackground.Position = UDim2.new(0.5, 0, 0.7, 0) -- Moved down
+BarBackground.AnchorPoint = Vector2.new(0.5, 0)
+BarBackground.BackgroundColor3 = Color3.fromRGB(35, 35, 45) -- Dark grey bar
+BarBackground.BorderSizePixel = 0
+BarBackground.Parent = LoadingFrame
+Instance.new("UICorner", BarBackground).CornerRadius = UDim.new(0, 5)
+
+--// Progress Bar Fill (The purple part)
+local BarFill = Instance.new("Frame")
+BarFill.Size = UDim2.new(0, 0, 1, 0) -- Starts at 0 width
+BarFill.Position = UDim2.new(0, 0, 0, 0)
+BarFill.AnchorPoint = Vector2.new(0, 0)
+BarFill.BackgroundColor3 = Color3.fromRGB(150, 70, 200) -- Purple Color
+BarFill.BorderSizePixel = 0
+BarFill.Parent = BarBackground
+Instance.new("UICorner", BarFill).CornerRadius = UDim.new(0, 5)
+
+--// Action Text Label (Modified)
+local ActionLabel = Instance.new("TextLabel")
+ActionLabel.Size = UDim2.new(1, 0, 0.2, 0) -- Adjusted height
+ActionLabel.Position = UDim2.new(0, 0, 0.82, 0) -- Moved down
+ActionLabel.BackgroundTransparency = 1
+ActionLabel.Text = "Loading Core Modules..." -- Best Text 2
+ActionLabel.Font = Enum.Font.GothamBold
+ActionLabel.TextSize = 16
+ActionLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+ActionLabel.TextXAlignment = Enum.TextXAlignment.Center
+ActionLabel.TextYAlignment = Enum.TextYAlignment.Center
+ActionLabel.Parent = LoadingFrame
+
+
+local startTime = os.time()
+-- formatTime function removed as it's no longer used
+
+-- Update the loading screen progress bar
+local updateConnection
+updateConnection = RunService.Heartbeat:Connect(function()
+    local currentTime = os.time()
+    local timeElapsed = currentTime - startTime
+    local timeLeft = math.max(0, LOAD_DELAY_SECONDS - timeElapsed)
+    
+    -- Calculate the progress (0 to 1)
+    local progress = math.min(1, timeElapsed / LOAD_DELAY_SECONDS) 
+
+    -- Update the progress bar fill size
+    BarFill.Size = UDim2.new(progress, 0, 1, 0)
+    
+    if timeLeft <= 0 then
+        updateConnection:Disconnect()
+        LoadingGUI:Destroy()
+        -- The rest of the script (main GUI) will now load/be parented to the PlayerGui
+    end
+end)
+
+-- Wait for the countdown to finish before loading the main script's GUI elements
+while os.time() - startTime < LOAD_DELAY_SECONDS do
+    task.wait(1)
+end
+
+-- --- END: SCRIPT LOCK/LOADING SCREEN LOGIC ---
+
+--// GUI
+local TradeAssistGUI = Instance.new("ScreenGui")
+TradeAssistGUI.Name = "TradeAssistGUI"
+TradeAssistGUI.ResetOnSpawn = false
+TradeAssistGUI.IgnoreGuiInset = true
+TradeAssistGUI.Parent = playerGui -- Parented *after* the delay
+
+--// START: TOP-RIGHT NOTIFICATION BOX
+local NotificationFrame = Instance.new("Frame")
+NotificationFrame.Name = "TopRightNotification"
+NotificationFrame.Size = UDim2.new(0, 200, 0, 40) -- Adjusted size
+NotificationFrame.Position = UDim2.new(1, -210, 0, 10) -- Top Right Position (10px padding)
+NotificationFrame.AnchorPoint = Vector2.new(0, 0)
+NotificationFrame.BackgroundTransparency = 1
+NotificationFrame.Parent = TradeAssistGUI
+
+--// Black Background Box
+local BlackBox = Instance.new("Frame")
+BlackBox.Size = UDim2.new(1, 0, 1, 0)
+BlackBox.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+BlackBox.BackgroundTransparency = 0.15 -- Semi-transparent black
+BlackBox.BorderSizePixel = 0
+BlackBox.Parent = NotificationFrame
+
+--// Border-like Effect (Using a TextLabel with custom font characters)
+local BorderLabel = Instance.new("TextLabel")
+BorderLabel.Size = UDim2.new(1, 0, 1, 0)
+BorderLabel.Position = UDim2.new(0, 0, 0, 0)
+BorderLabel.BackgroundTransparency = 1
+BorderLabel.Text = "( ≧∇≦ )" -- Stylized 'border'
+BorderLabel.Font = Enum.Font.SourceSans
+BorderLabel.TextSize = 30
+BorderLabel.TextColor3 = Color3.fromRGB(200, 200, 200) -- Light grey for the 'border'
+BorderLabel.TextWrapped = true
+BorderLabel.Parent = BlackBox
+
+--// Custom Text Label
+local CustomTextLabel = Instance.new("TextLabel")
+CustomTextLabel.Size = UDim2.new(1, 0, 1, 0)
+CustomTextLabel.Position = UDim2.new(0, 0, 0, 0)
+CustomTextLabel.BackgroundTransparency = 1
+CustomTextLabel.Text = "GROW A GARDEN USER @Mayksszz" -- Your requested text
+CustomTextLabel.Font = Enum.Font.GothamBold
+CustomTextLabel.TextSize = 13
+CustomTextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+CustomTextLabel.TextXAlignment = Enum.TextXAlignment.Center
+CustomTextLabel.TextYAlignment = Enum.TextYAlignment.Center
+CustomTextLabel.ZIndex = 2 -- Ensure text is on top
+CustomTextLabel.Parent = NotificationFrame
+
+-- Function to Fade Out/Destroy the box after a delay (e.g., 5 seconds)
+local function fadeAndDestroy()
+    -- Tween over 1 second, starting after a 4-second delay
+    local info = TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, 0, false, 4) 
+    
+    -- Fade the container's contents
+    tweenService:Create(BlackBox, info, {BackgroundTransparency = 1}):Play()
+    tweenService:Create(BorderLabel, info, {TextTransparency = 1, TextColor3 = Color3.fromRGB(0,0,0)}):Play() 
+    tweenService:Create(CustomTextLabel, info, {TextTransparency = 1}):Play()
+    
+    task.delay(5, function() -- Destroy after total time (4s delay + 1s tween)
+        NotificationFrame:Destroy()
+    end)
+end
+
+-- Start the fade out after a short initial display (1 second)
+task.delay(1, fadeAndDestroy)
+--// END: TOP-RIGHT NOTIFICATION BOX
+
+
+--// Main Frame (Smaller Size)
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+-- Adjusted for new content
+MainFrame.Size = UDim2.new(0, 240, 0, 420) -- INCREASED SIZE to fit new buttons
+MainFrame.Position = UDim2.new(0.5, -120, 0.5, -210) -- Recenter the frame
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Parent = TradeAssistGUI
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
+
+--// Drag Support
+local dragging = false
+local dragStart, startPos
+local function updateDrag(input)
+	local delta = input.Position - dragStart
+	MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+MainFrame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = MainFrame.Position
+	end
+end)
+MainFrame.InputChanged:Connect(function(input)
+	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+		updateDrag(input)
+	end
+end)
+userInput.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = false
+	end
+end)
+
+--// Top Bar
+local TopBar = Instance.new("Frame")
+TopBar.Size = UDim2.new(1, 0, 0, 30)
+TopBar.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+TopBar.BorderSizePixel = 0
+TopBar.ZIndex = 2
+TopBar.Parent = MainFrame
+
+--// Title Label
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(1, -30, 1, 0)
+TitleLabel.Position = UDim2.new(0, 0, 0, 0)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Text = "Trade Freeze"
+TitleLabel.Font = Enum.Font.GothamBold
+TitleLabel.TextSize = 14
+TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Center
+TitleLabel.ZIndex = 2
+TitleLabel.Parent = TopBar
+
+--// Close Button
+local CloseButton = Instance.new("TextButton")
+CloseButton.Size = UDim2.new(0, 30, 0, 30)
+CloseButton.Position = UDim2.new(1, -30, 0, 0)
+CloseButton.Text = "X"
+CloseButton.Font = Enum.Font.GothamBold
+CloseButton.TextSize = 16
+CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseButton.BackgroundColor3 = Color3.fromRGB(180, 60, 60)
+CloseButton.BorderSizePixel = 0
+CloseButton.ZIndex = 3
+Instance.new("UICorner", CloseButton).CornerRadius = UDim.new(0, 6)
+CloseButton.Parent = TopBar
+
+-- MODIFIED: HIDE GUI instead of destroying it to allow the script to persist after teleport/rejoin.
+CloseButton.MouseButton1Click:Connect(function()
+	TradeAssistGUI.Enabled = false 
+	-- Optional: Add a keybind to reopen the GUI, like the Delete key
+	local keybindConnection
+	keybindConnection = userInput.InputBegan:Connect(function(input, gameProcessed)
+		if input.KeyCode == Enum.KeyCode.Delete and not gameProcessed then
+			TradeAssistGUI.Enabled = not TradeAssistGUI.Enabled
+			if TradeAssistGUI.Enabled then
+				keybindConnection:Disconnect() -- Disconnect the temporary handler once shown
+			end
+		end
+	end)
+end)
+
+--// Content Frame
+local ContentFrame = Instance.new("Frame")
+ContentFrame.Size = UDim2.new(1, 0, 1, -30)
+ContentFrame.Position = UDim2.new(0, 0, 0, 30)
+ContentFrame.BackgroundTransparency = 1
+ContentFrame.Parent = MainFrame
+
+--// Profile Picture
+local PlayerIconFrame = Instance.new("Frame")
+PlayerIconFrame.Size = UDim2.new(0, 80, 0, 80)
+PlayerIconFrame.Position = UDim2.new(0.5, -40, 0, 8)
+PlayerIconFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+PlayerIconFrame.BorderSizePixel = 0
+PlayerIconFrame.ClipsDescendants = true
+PlayerIconFrame.Parent = ContentFrame
+Instance.new("UICorner", PlayerIconFrame).CornerRadius = UDim.new(1, 0)
+
+local PlayerIcon = Instance.new("ImageLabel")
+PlayerIcon.Size = UDim2.new(0.85, 0, 0.85, 0)
+PlayerIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
+PlayerIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+PlayerIcon.BackgroundTransparency = 1
+PlayerIcon.Image = "rbxassetid://0"
+PlayerIcon.Parent = PlayerIconFrame
+
+-- Load profile image
+local success, thumb = pcall(function()
+	return Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size180x180)
+end)
+if success then
+	PlayerIcon.Image = thumb
+end
+
+--// Username Box
+local UsernameBox = Instance.new("TextBox")
+UsernameBox.PlaceholderText = "Enter Username"
+UsernameBox.Font = Enum.Font.GothamBold
+UsernameBox.TextSize = 13
+UsernameBox.Size = UDim2.new(0.85, 0, 0, 30)
+UsernameBox.Position = UDim2.new(0.5, 0, 0, 95)
+UsernameBox.AnchorPoint = Vector2.new(0.5, 0)
+UsernameBox.BackgroundColor3 = Color3.fromRGB(55, 55, 65)
+UsernameBox.TextColor3 = Color3.new(1, 1, 1)
+UsernameBox.ClearTextOnFocus = false
+UsernameBox.Parent = ContentFrame
+Instance.new("UICorner", UsernameBox).CornerRadius = UDim.new(0, 8)
+
+UsernameBox.FocusLost:Connect(function(enterPressed)
+	if enterPressed and UsernameBox.Text ~= "" then
+		local name = UsernameBox.Text
+		local ok, id = pcall(function()
+			return Players:GetUserIdFromNameAsync(name)
+		end)
+		if ok then
+			local content, _ = Players:GetUserThumbnailAsync(id, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size180x180)
+			PlayerIcon.Image = content
+		end
+	end
+end)
+
+--// Button Container
+local ButtonContainer = Instance.new("Frame")
+ButtonContainer.Size = UDim2.new(1, 0, 0, 206) -- Increased size to fit new buttons
+ButtonContainer.Position = UDim2.new(0, 0, 0, 135)
+ButtonContainer.BackgroundTransparency = 1
+ButtonContainer.Parent = ContentFrame
+
+local layout = Instance.new("UIListLayout", ButtonContainer)
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+layout.Padding = UDim.new(0, 6)
+layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+layout.VerticalAlignment = Enum.VerticalAlignment.Top
+
+-- Last click time for the 1-minute cooldown buttons
+local lastButtonClickTime = 0 
+-- Store the original text and color for the buttons
+local buttonDefaults = {}
+
+local function formatTimeTwo(seconds)
+    local minutes = math.floor(seconds / 60)
+    local remainingSeconds = math.floor(seconds % 60)
+    return string.format("%02i:%02i", minutes, remainingSeconds)
+end
+
+local function createButton(text, color, isRandomizer)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(0.85, 0, 0, 30)
+	btn.Text = text
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 13
+	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.BackgroundColor3 = color
+    btn.Active = true -- Start as active unless Randomizer logic kicks in
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+	btn.Parent = ButtonContainer
+    
+    if not isRandomizer then
+        buttonDefaults[btn] = {text = text, color = color}
+    end
+    
+	return btn
+end
+
+local FreezeButton = createButton("FREEZE TRADE", Color3.fromRGB(240, 180, 60), false)
+local ForceButton = createButton("FORCE TRADE PETS", Color3.fromRGB(160, 120, 255), false)
+local AcceptButton = createButton("AUTO ACCEPT", Color3.fromRGB(70, 200, 120), false)
+local EggRandomizerButton = createButton("EGG RANDOMIZER", Color3.fromRGB(150, 70, 200), true)
+local EggBoostButton = createButton("EGG PLACED BOOST", Color3.fromRGB(60, 180, 240), false) 
+local HugePetButton = createButton("HATCH HUGE PET", Color3.fromRGB(240, 60, 180), false) 
+
+-- List of buttons subject to the general 1-minute cooldown
+local generalCooldownButtons = {FreezeButton, ForceButton, AcceptButton, EggBoostButton, HugePetButton}
+
+
+-- Function to handle the cooldown and execution for general buttons
+local function handleGeneralButton(button, defaultText, callback)
+    local currentTime = os.time()
+    local timeElapsed = currentTime - lastButtonClickTime
+    
+    if timeElapsed >= GENERAL_COOLDOWN_TIME then
+        -- Button is ready, execute action and start cooldown
+        lastButtonClickTime = currentTime
+        callback() 
+        -- Update UI immediately after successful click
+        for _, btn in ipairs(generalCooldownButtons) do
+            if btn.Active then -- Only lock active buttons
+                btn.Active = false
+                btn.BackgroundColor3 = Color3.fromRGB(75, 75, 85)
+                btn.TextSize = 16
+            end
+        end
+    end
+end
+
+-- Update the button text for general cooldown buttons every frame
+RunService.Heartbeat:Connect(function()
+    local currentTime = os.time()
+    local timeElapsed = currentTime - lastButtonClickTime
+    local timeLeft = GENERAL_COOLDOWN_TIME - timeElapsed
+
+    if timeLeft > 0 then
+        -- Cooldown is active
+        local cooldownText = "🔒 " .. formatTimeTwo(timeLeft)
+        for _, btn in ipairs(generalCooldownButtons) do
+            btn.Text = cooldownText
+        end
+    else
+        -- Cooldown is finished, reset appearance
+        f
